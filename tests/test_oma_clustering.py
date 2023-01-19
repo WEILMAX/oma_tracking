@@ -5,7 +5,7 @@ from dataclasses import asdict
 import pytest
 import pandas as pd
 from sklearn.datasets import make_blobs
-from oma_tracking.oma_clustering import ModeClusterer  # noqa
+from oma_tracking.oma_clustering import ModeClusterer
 
 
 def test_fit():

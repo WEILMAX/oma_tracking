@@ -6,6 +6,7 @@ Author: Maximillian Weil
 from dataclasses import dataclass, field
 from sklearn.cluster import DBSCAN
 import pandas as pd
+from oma_tracking.utils import check_columns
 
 
 @dataclass
@@ -111,17 +112,3 @@ class ModeClusterer:
         codes, uniques = pd.factorize(clustered_data["labels"])
         clustered_data["labels"] = codes
         return clustered_data
-
-
-def check_columns(cols: list, data: pd.DataFrame) -> bool:
-    """
-    Check if all elements of a list are in the columns of a dataframe.
-
-    Args:
-        columns (list): The list of columns to be checked
-        data (pd.DataFrame): The dataframe to be checked against
-
-    Returns:
-        bool: True if all elements of the list are in the columns of the dataframe, False otherwise
-    """
-    return all(col in data.columns for col in cols)

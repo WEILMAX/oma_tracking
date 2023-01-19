@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['pandas', 'sklearn',  'dataclasses']
+requirements = ['pandas', 'scikit-learn',  'dataclasses']
 
 test_requirements = ['pytest>=3', ]
 
@@ -24,7 +24,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
     ],
     description="A Python package to identify, cluster and track modes calculated during an Operational Modal Analysis. ",
