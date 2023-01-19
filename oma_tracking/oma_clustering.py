@@ -20,7 +20,9 @@ class ModeClusterer:
         freq_multiplier (float): The multiplier for the frequency feature.
         damping_multiplier (float): The multiplier for the damping feature.
         size_multiplier (float): The multiplier for the size feature.
-        columns (list): The columns of the dataframe that should be used for clustering.
+        cols (list): The columns of the dataframe that should be used for clustering.
+        min_modal_size (float): The minimum size of a mode to be considered for clustering.
+        max_modal_damping (float): The maximum damping of a mode to be considered for clustering.
         dbsc (DBSCAN): The DBSCAN object that stores the result of the clustering.
         dbscan_data (pd.DataFrame): The dataframe that is used for clustering.
     """
