@@ -117,7 +117,7 @@ class ModeClusterer:
         dbscan_data["labels"] = self.dbsc.labels_
         self.dbscan_data = dbscan_data
 
-    def predict(self, min_cluster_size: int = 500) -> pd.DataFrame:
+    def predict(self, min_cluster_size: int = 1000) -> pd.DataFrame:
         """Predict the clusters of the fitted data
         that have more clusters than the min_cluster_size.
 
