@@ -1,5 +1,7 @@
 """
 oma_clustering.py is a module for clustering modes using DBSCAN algorithm.
+To install the hdbscan package, run:
+    conda install -c conda-forge hdbscan
 -------------------------------------------------------------------------
 Author: Maximillian Weil
 """

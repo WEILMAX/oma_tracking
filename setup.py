@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = ['pandas', 'scikit-learn',  'dataclasses', 'hdbscan']
 
-test_requirements = ['pytest>=3', ]
+test_requirements = ['pytest>=3']
 
 setup(
     author="Maximillian Weil",
