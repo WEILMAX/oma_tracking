@@ -149,7 +149,7 @@ class ModeClusterer:
 
 
 
-@dataclass
+@dataclass()
 class ModeClusterer_HDBSCAN:
     """ModeClusterer is a class for clustering mode parameters using HDBSCAN algorithm.
 
@@ -163,8 +163,8 @@ class ModeClusterer_HDBSCAN:
         dbsc (DBSCAN): The DBSCAN object that stores the result of the clustering.
         dbscan_data (pd.DataFrame): The dataframe that is used for clustering.
     """
-
     min_cluster_size: int = 100
+    cluster_selection_epsilon: float = 0
     multipliers: dict[str,float] = \
         field(default_factory=lambda: {"frequency": 40, "size": 0.5, "damping": 1})
     index_divider: float = 20000
@@ -173,8 +173,13 @@ class ModeClusterer_HDBSCAN:
     min_size: float = 5.0
     max_damping: float = 5.0
 
+
     def __post_init__(self):
-        self.dbsc = hdbscan.HDBSCAN(min_cluster_size=self.min_cluster_size)
+        self.dbsc = \
+            hdbscan.HDBSCAN(
+                min_cluster_size = self.min_cluster_size,
+                cluster_selection_epsilon = self.cluster_selection_epsilon,
+            )
         self.hdbscan_data: pd.DataFrame = pd.DataFrame()
 
     def fit(
