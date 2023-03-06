@@ -19,3 +19,4 @@ def check_columns(cols: list, data: pd.DataFrame) -> bool:
         bool: True if all elements of the list are in the columns of the dataframe, False otherwise
     """
     return all(col in data.columns for col in cols)
+
