@@ -51,6 +51,8 @@ class HarmonicDetector:
     modal_data: pd.DataFrame
     p_orders: List[int] = field(default_factory=list)
     distances: pd.DataFrame = field(init=False)
+    min_rpm: float = 6.0
+    max_distance: float = 0.1
 
     def __post_init__(self):
         return None
@@ -160,8 +162,6 @@ class HarmonicDetector:
         figsize2: tuple[int, int] = (30,8),
         frequency_range: tuple[float, float] = (0, 2),
         max_damping: float = 10.0,
-        min_rpm: float = 6.0,
-        max_distance: float = 0.05,
         direction: str = 'SS'
         ) -> None:
         """Plot the distances between the
@@ -186,9 +186,9 @@ class HarmonicDetector:
             color='grey',
             label = 'tracked modes'
         )
-        min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > min_rpm).values]
+        min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
-            p_order_data = min_rpm_plt_data[min_rpm_plt_data[f'distance_{p_order}p'] < max_distance]
+            p_order_data = min_rpm_plt_data[min_rpm_plt_data[f'distance_{p_order}p'] < self.max_distance]
             plt.scatter(
                 p_order_data.filter(regex='rpm'),
                 p_order_data['frequency'],
@@ -214,9 +214,9 @@ class HarmonicDetector:
             color='grey',
             label = 'tracked modes'
         )
-        min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > min_rpm).values]
+        min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
-            p_order_data = min_rpm_plt_data[min_rpm_plt_data[f'distance_{p_order}p'] < max_distance]
+            p_order_data = min_rpm_plt_data[min_rpm_plt_data[f'distance_{p_order}p'] < self.max_distance]
             plt.scatter(
                 p_order_data.index,
                 p_order_data['frequency'],
@@ -261,9 +261,7 @@ class HarmonicDetector:
         return distances
     
     def remove_harmonics(
-        self,
-        min_rpm: float = 5.0,
-        min_distance: float = 0.06
+        self
     ) -> pd.DataFrame:
         """Remove the harmonics from the
         modal data.
@@ -273,11 +271,11 @@ class HarmonicDetector:
         """
         data = self.get_plot_distance_data()
         data.reset_index(inplace=True)
-        min_rpm_data = data[(data.filter(regex='rpm') > min_rpm).values]
+        min_rpm_data = data[(data.filter(regex='rpm') > self.min_rpm).values]
         harmonics = \
             min_rpm_data[ \
                 min_rpm_data.filter(regex='distance').min(axis=1) \
-                < min_distance \
+                < self.max_distance \
                 ]
         harmonics_removed = data.drop(harmonics.index)
         harmonics_removed.set_index('timestamp', inplace=True)
