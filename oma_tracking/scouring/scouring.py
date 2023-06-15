@@ -19,7 +19,7 @@ def aggregate_time_series(
         pd.DataFrame: _description_
     """
     # Resample each time series in the dataframe to the desired frequency
-    resampled = data.resample(freq).mean().shift(1, freq=freq)
+    resampled = data.resample(freq).mean()#.shift(1, freq=freq)
 
     # Check if the resampled data at least contains 90% of the original data
     full_length = data.groupby(pd.Grouper(freq=freq)).size().max()

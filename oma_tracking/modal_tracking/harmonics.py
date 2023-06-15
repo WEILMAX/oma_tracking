@@ -184,7 +184,7 @@ class HarmonicDetector:
             plt_data['frequency'],
             alpha=0.1,
             color='grey',
-            label = 'tracked modes'
+            label = 'all modes'
         )
         min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
@@ -195,14 +195,20 @@ class HarmonicDetector:
                 alpha=0.1,
                 label=f'{p_order}p'
             )
+            x_function = np.linspace(0, p_order_data.filter(regex='rpm').max(), 10)
+            y_function = p_order * x_function / 60
+            plt.plot(x_function, y_function, linestyle='--', linewidth=2.0)
+
         plt.grid(True, color='k', linestyle='--', linewidth=0.5)
         plt.ylim(frequency_range[0], frequency_range[1])
-        plt.xlabel('RPM')
+        plt.xlabel('Rotor speed (rpm)')
         plt.ylabel('Frequency (Hz)')
-        plt.title(direction + ' harmonics detected' )
+        plt.title(direction + ' Campbell Diagram' )
         legend = plt.legend()
         for handle in legend.legendHandles:
             handle.set_alpha(1.0)
+        plt.xticks([])
+        plt.yticks([])
         plt.show()
 
         # Generate the freq timeseries figure
@@ -212,7 +218,7 @@ class HarmonicDetector:
             plt_data['frequency'],
             alpha=0.1,
             color='grey',
-            label = 'tracked modes'
+            label = 'all tracked modes'
         )
         min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
@@ -225,9 +231,10 @@ class HarmonicDetector:
             )
         plt.grid(True, color='k', linestyle='--', linewidth=0.5)
         plt.ylim(frequency_range[0], frequency_range[1])
-        plt.xlabel('Timestamp')
+        plt.xlabel('Timestamp (YYYY-MM)')
         plt.ylabel('Frequency (Hz)')
-        plt.title(direction + ' harmonics detected' )
+        plt.yticks([])
+        plt.title(direction + ' Tracked harmonic modes' )
         legend = plt.legend()
         for handle in legend.legendHandles:
             handle.set_alpha(1.0)
