@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 import matplotlib.pyplot as plt
 from typing import List, Union
 import datetime
+import matplotlib.dates as mdates
+from matplotlib.transforms import Affine2D
 
 def theoretical_harmonic(
     data: pd.DataFrame,
@@ -153,13 +155,13 @@ class HarmonicDetector:
         #plt.ylim(frequency_range[0], frequency_range[1])
         plt.xlabel('RPM')
         plt.ylabel('Frequency (Hz)')
-        plt.title(f'Distance to {p_harmonic}p')
+        #plt.title(f'Distance to {p_harmonic}p')
         plt.show()
 
     def plot_distances(
         self,
-        figsize: tuple[int, int] = (10,6),
-        figsize2: tuple[int, int] = (30,8),
+        figsize: tuple[int, int] = (10,5),
+        figsize2: tuple[int, int] = (10,5),
         frequency_range: tuple[float, float] = (0, 2),
         max_damping: float = 10.0,
         direction: str = 'SS'
@@ -184,7 +186,8 @@ class HarmonicDetector:
             plt_data['frequency'],
             alpha=0.1,
             color='grey',
-            label = 'all modes'
+            label = 'all',
+            s=10
         )
         min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
@@ -193,7 +196,8 @@ class HarmonicDetector:
                 p_order_data.filter(regex='rpm'),
                 p_order_data['frequency'],
                 alpha=0.1,
-                label=f'{p_order}p'
+                label=f'{p_order}p',
+                s=10
             )
             x_function = np.linspace(0, p_order_data.filter(regex='rpm').max(), 10)
             y_function = p_order * x_function / 60
@@ -203,12 +207,32 @@ class HarmonicDetector:
         plt.ylim(frequency_range[0], frequency_range[1])
         plt.xlabel('Rotor speed (rpm)')
         plt.ylabel('Frequency (Hz)')
-        plt.title(direction + ' Campbell Diagram' )
-        legend = plt.legend()
+        #plt.title(direction + ' Campbell Diagram' )
+        legend = plt.legend(loc = 'upper left')
         for handle in legend.legendHandles:
             handle.set_alpha(1.0)
+            handle.set_sizes([30.0])
         plt.xticks([])
         plt.yticks([])
+
+        print(plt_data.filter(like='rpm').max())
+        # Annotate SS1
+        SS1_bracket = plt.text(plt_data.filter(like='rpm').max().values[0]+0.01, 0.22, '}', fontsize=12, ha='left', va='center', fontstretch=1000)
+        plt.text(plt_data.filter(like='rpm').max().values[0]+0.1, 0.22, 'SS1', fontsize=18, ha='left', va='center', rotation=-90)
+
+        # Annotate SS2
+        SS2_bracket = plt.text(plt_data.filter(like='rpm').max().values[0]+0.01, 1.05, '}', fontsize=16, ha='left', va='center')
+        plt.text(plt_data.filter(like='rpm').max().values[0]+0.1, 1.05, 'SS2', fontsize=18, ha='left', va='center', rotation=-90)
+
+        # Get the current axes
+        ax = plt.gca()
+
+        # Increase the width of the spines
+        ax.spines['left'].set_linewidth(2.5)
+        ax.spines['bottom'].set_linewidth(2.5)
+        ax.spines['right'].set_linewidth(2.5)
+        ax.spines['top'].set_linewidth(2.5)
+
         plt.show()
 
         # Generate the freq timeseries figure
@@ -216,9 +240,10 @@ class HarmonicDetector:
         plt.scatter(
             plt_data.index,
             plt_data['frequency'],
-            alpha=0.1,
+            alpha=0.2,
             color='grey',
-            label = 'all tracked modes'
+            label = 'all',
+            s=6
         )
         min_rpm_plt_data = plt_data[(plt_data.filter(regex='rpm') > self.min_rpm).values]
         for p_order in self.p_orders:
@@ -226,18 +251,40 @@ class HarmonicDetector:
             plt.scatter(
                 p_order_data.index,
                 p_order_data['frequency'],
-                alpha=0.1,
-                label=f'{p_order}p'
+                alpha=0.2,
+                label=f'{p_order}p',
+                s=6
             )
         plt.grid(True, color='k', linestyle='--', linewidth=0.5)
-        plt.ylim(frequency_range[0], frequency_range[1])
+        plt.ylim(frequency_range[0], 1.3)
         plt.xlabel('Timestamp (YYYY-MM)')
         plt.ylabel('Frequency (Hz)')
         plt.yticks([])
-        plt.title(direction + ' Tracked harmonic modes' )
-        legend = plt.legend()
+        #plt.title(direction + ' Tracked harmonic modes' )
+        legend = plt.legend(loc = 'upper left')
         for handle in legend.legendHandles:
             handle.set_alpha(1.0)
+            handle.set_sizes([30.0])
+
+        # Annotate SS1
+        SS1_bracket = plt.text(p_order_data.index[-1], 0.22, '}', fontsize=12, ha='left', va='center', fontstretch=1000)
+        plt.text(p_order_data.index[-1]+datetime.timedelta(hours=40), 0.22, 'SS1', fontsize=18, ha='left', va='center', rotation=-90)
+
+        # Annotate SS2
+        SS2_bracket = plt.text(p_order_data.index[-1], 1.05, '}', fontsize=16, ha='left', va='center')
+        plt.text(p_order_data.index[-1]+datetime.timedelta(hours=40), 1.05, 'SS2', fontsize=18, ha='left', va='center', rotation=-90)
+
+        # Get the current axes
+        ax = plt.gca()
+
+        # Adjust the x-axis tick frequency
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+
+        # Increase the width of the spines
+        ax.spines['left'].set_linewidth(2.5)
+        ax.spines['bottom'].set_linewidth(2.5)
+        ax.spines['right'].set_linewidth(2.5)
+        ax.spines['top'].set_linewidth(2.5)
         plt.show()
 
     def distance_to_harmonic(
@@ -299,7 +346,7 @@ class HarmonicDetector:
         """
         harmonics_removed = self.remove_harmonics()
         data = self.get_plot_distance_data()
-        plt.figure(figsize=(30,8))
+        plt.figure(figsize=(20,10))
         plt.scatter(
             data.index,
             data['frequency'],
@@ -332,7 +379,7 @@ class HarmonicDetector:
             plt.xlim(xlim[0], xlim[1])
         plt.xlabel('Timestamp')
         plt.ylabel('Frequency (Hz)')
-        plt.title('Harmonics removed')
+        #plt.title('Harmonics removed')
         legend = plt.legend()
         for handle in legend.legendHandles:
             handle.set_alpha(1.0)
