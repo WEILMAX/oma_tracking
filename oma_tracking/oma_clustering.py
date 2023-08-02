@@ -24,7 +24,14 @@ def data_selection(
     dbscan_data = modal_data[cols]
     # remove clusters with small size and very high damping as these are non-physical
     dbscan_data = dbscan_data[dbscan_data['size'] > min_size]
-    dbscan_data = dbscan_data[dbscan_data['damping'] < max_damping]
+    if 'damping' in dbscan_data.columns:
+        dbscan_data = dbscan_data[dbscan_data['damping'] < max_damping]
+    elif 'mean_damping' in dbscan_data.columns:
+        dbscan_data = dbscan_data[dbscan_data['mean_damping'] < max_damping]
+    else: 
+        raise KeyError(
+            "The modal data does not contain the column 'damping' or 'mean_damping'."
+        )
 
     return dbscan_data
 
