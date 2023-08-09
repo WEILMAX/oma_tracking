@@ -6,10 +6,10 @@ To install the hdbscan package, run:
 Author: Maximillian Weil
 """
 from dataclasses import dataclass, field
-
-import hdbscan
+from typing import Union
+#import hdbscan
 import pandas as pd
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, HDBSCAN
 
 from oma_tracking.utils import check_columns
 
@@ -21,7 +21,7 @@ def data_selection(
     max_damping: float
     ):
     # feature selection
-    dbscan_data = modal_data[cols]
+    dbscan_data = modal_data#[cols]
     # remove clusters with small size and very high damping as these are non-physical
     dbscan_data = dbscan_data[dbscan_data['size'] > min_size]
     if 'damping' in dbscan_data.columns:
@@ -40,7 +40,7 @@ def column_multiplier(
     modal_data: pd.DataFrame,
     cols: list,
     multipliers: dict[str,float],
-    index_divider: float
+    index_divider: Union[float, None] = None
     ):
     multiplied_data = modal_data.copy()
     # Remove timestamps as index to allow for time gaps in monitoring
@@ -50,10 +50,11 @@ def column_multiplier(
         if 'damping' in key:
             multiplied_data[key] = (multiplied_data[key] + 1)
         multiplied_data[key] = multiplied_data[key] * multipliers[key]
-    # Include the index dimension to the clustering
-    multiplied_data["time_diff"] = (
-        multiplied_data.index.astype(float) - multiplied_data.index.values[0].astype(float)
-    ) / index_divider
+    # Include the index dimension to the clustering if index_divider is not None
+    if index_divider is not None:
+        multiplied_data["time_diff"] = (
+            multiplied_data.index.astype(float) - multiplied_data.index.values[0].astype(float)
+        ) / index_divider
     return multiplied_data
 
 
@@ -80,7 +81,7 @@ class ModeClusterer:
     min_samples: int = 100
     multipliers: dict[str,float] = \
         field(default_factory=lambda: {"frequency": 40, "size": 0.5, "damping": 1})
-    index_divider: float = 20000
+    index_divider: Union[float, None] = None
     cols: list[str] = \
         field(default_factory=lambda: ["frequency", "size", "damping"])
     min_size: float = 5.0
@@ -93,6 +94,7 @@ class ModeClusterer:
     def fit(
         self,
         modal_data: pd.DataFrame,
+        frequency_range: Union[tuple[float, float], None] = None,
         **kwargs
         ):
         """Fit the modal_data to the DBSCAN algorithm
@@ -105,6 +107,17 @@ class ModeClusterer:
             raise ValueError(
                 "The modal data does not contain all the required columns."
             )
+        frequency_col = 'mean_frequency'
+        if frequency_col not in modal_data.columns:
+            frequency_col = 'frequency'
+            if frequency_col not in modal_data.columns:
+                raise ValueError("No frequency data found in dataframe. Columns 'mean_frequency' or 'frequency' required.")
+        if frequency_range is not None:
+            modal_data = \
+                modal_data.copy().loc[
+                    (modal_data[frequency_col] >= frequency_range[0]) &
+                    (modal_data[frequency_col] <= frequency_range[1])
+                ]
         dbscan_data = \
             data_selection(
                 modal_data,
@@ -122,7 +135,7 @@ class ModeClusterer:
                 self.index_divider
             )
 
-        self.dbsc = DBSCAN(eps=self.eps, min_samples=self.min_samples).fit(multiplied_dbscan_data)
+        self.dbsc = DBSCAN(eps=self.eps, min_samples=self.min_samples).fit(multiplied_dbscan_data[self.cols])
         dbscan_data["labels"] = self.dbsc.labels_
         self.dbscan_data = dbscan_data
 
@@ -171,27 +184,28 @@ class ModeClusterer_HDBSCAN:
         dbscan_data (pd.DataFrame): The dataframe that is used for clustering.
     """
     min_cluster_size: int = 100
-    cluster_selection_epsilon: float = 0
+    min_samples: Union[int, None] = None
     multipliers: dict[str,float] = \
         field(default_factory=lambda: {"frequency": 40, "size": 0.5, "damping": 1})
-    index_divider: float = 20000
+    index_divider: Union[float, None] = None
     cols: list[str] = \
         field(default_factory=lambda: ["frequency", "size", "damping"])
     min_size: float = 5.0
     max_damping: float = 5.0
 
-
     def __post_init__(self):
-        self.dbsc = \
-            hdbscan.HDBSCAN(
+        self.hdbsc = \
+            HDBSCAN(
                 min_cluster_size = self.min_cluster_size,
-                cluster_selection_epsilon = self.cluster_selection_epsilon,
+                min_samples = self.min_samples
             )
         self.hdbscan_data: pd.DataFrame = pd.DataFrame()
+        
 
     def fit(
         self,
         modal_data: pd.DataFrame,
+        frequency_range: Union[tuple[float, float], None] = None,
         **kwargs
         ):
         """Fit the modal_data to the HDBSCAN algorithm
@@ -204,6 +218,17 @@ class ModeClusterer_HDBSCAN:
             raise ValueError(
                 "The modal data does not contain all the required columns."
             )
+        frequency_col = 'mean_frequency'
+        if frequency_col not in modal_data.columns:
+            frequency_col = 'frequency'
+            if frequency_col not in modal_data.columns:
+                raise ValueError("No frequency data found in dataframe. Columns 'mean_frequency' or 'frequency' required.")
+        if frequency_range is not None:
+            modal_data = \
+                modal_data.copy().loc[
+                    (modal_data[frequency_col] >= frequency_range[0]) &
+                    (modal_data[frequency_col] <= frequency_range[1])
+                ]
         hdbscan_data = \
             data_selection(
                 modal_data,
@@ -221,12 +246,13 @@ class ModeClusterer_HDBSCAN:
                 self.index_divider
             )
 
-        self.dbsc = \
-            hdbscan.HDBSCAN(
+        self.hdbsc = \
+            HDBSCAN(
                 min_cluster_size=self.min_cluster_size,
+                min_samples=self.min_samples,
                 **kwargs
-            ).fit(multiplied_dbscan_data)
-        hdbscan_data["labels"] = self.dbsc.labels_
+            ).fit(multiplied_dbscan_data[self.cols])
+        hdbscan_data["labels"] = self.hdbsc.labels_
         self.hdbscan_data = hdbscan_data
 
     def predict(self, min_cluster_size: int = 500) -> pd.DataFrame:

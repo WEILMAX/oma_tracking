@@ -158,6 +158,40 @@ class HarmonicDetector:
         #plt.title(f'Distance to {p_harmonic}p')
         plt.show()
 
+    def cluster_harmonics(
+            self,
+            frequency_range: tuple[float, float] = (0, 2),
+            rpm_col: str = 'rpm'
+    ):
+        """Cluster the harmonics based on the
+        distance between the theoretical harmonic
+        and the measured frequency.
+
+        Returns:
+            pd.DataFrame: Clustered harmonics
+        """
+        # Get the distance data
+        distance_data = self.get_plot_distance_data(frequency_range=frequency_range).copy()
+        distance_data['harmonic'] = 0
+        # Cluster the harmonics
+        for p_order in self.p_orders:
+            # Your condition to replace values in the 'harmonic' column based on the 'distance_{p_order}p' column
+            condition1 = distance_data[f'distance_{p_order}p'] < self.max_distance
+            condition2 = distance_data[rpm_col] > self.min_rpm
+            #distance_data.loc[condition2, 'harmonic'] = p_order
+
+            condition1 = distance_data[f'distance_{p_order}p'] < self.max_distance
+
+            # Convert the selected columns to numeric data types before comparison
+            selected_columns = distance_data.filter(regex='rpm').columns
+            distance_data[selected_columns] = distance_data[selected_columns].apply(pd.to_numeric, errors='coerce')
+
+            condition2 = distance_data[rpm_col] > self.min_rpm
+            distance_data.loc[(condition1 & condition2), 'harmonic'] = p_order
+
+
+        return distance_data
+
     def plot_distances(
         self,
         figsize: tuple[int, int] = (10,5),
