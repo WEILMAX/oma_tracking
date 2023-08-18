@@ -166,6 +166,37 @@ class ModeClusterer:
         codes, uniques = pd.factorize(clustered_data["labels"])
         clustered_data["labels"] = codes
         return clustered_data
+    
+    def predict_with_noise(self, min_cluster_size: int = 500) -> pd.DataFrame:
+        """Predict the clusters of the fitted data
+        that have more clusters than the min_cluster_size.
+        Keep the noise as -1.
+
+        Args:
+            min_cluster_size (int, optional): The minimum number of modes in a cluster.
+                Defaults to 500.
+
+        Returns:
+            pd.DataFrame: The dataframe with the predicted clusters and the noise as -1.
+        """
+
+        clustered_data = self.dbscan_data.copy()
+        # Remove clusters with less than min_cluster_size samples
+        lbls = []
+        for label in self.dbscan_data["labels"].unique():
+            cnt = len(self.dbscan_data[self.dbscan_data["labels"] == label])
+            if cnt > min_cluster_size:
+                lbls.append(label)
+
+        # Replace all labels that aren't in lbls with -1
+        clustered_data.loc[~clustered_data["labels"].isin(lbls), "labels"] = -1
+        # Reset the modes bigger than 0 to start from 0 keeping the previous order but filling the missing gaps
+        # and keep the noise as -1
+        non_noise_clusters = clustered_data[clustered_data["labels"] >= 0]
+        codes, uniques = pd.factorize(non_noise_clusters["labels"])
+        non_noise_clusters["labels"] = codes
+        clustered_data[clustered_data["labels"] >= 0] = non_noise_clusters
+        return clustered_data
 
 
 
@@ -279,6 +310,35 @@ class ModeClusterer_HDBSCAN:
             self.hdbscan_data[self.hdbscan_data["labels"].isin(lbls)]["labels"] >= 0
         ]
         # Reset the modes to start from 0
+        codes, uniques = pd.factorize(clustered_data["labels"])
+        clustered_data["labels"] = codes
+        return clustered_data
+    
+    def predict_with_noise(self, min_cluster_size: int = 500) -> pd.DataFrame:
+        """Predict the clusters of the fitted data
+        that have more clusters than the min_cluster_size.
+        Keep the noise as -1.
+
+        Args:
+            min_cluster_size (int, optional): The minimum number of modes in a cluster.
+                Defaults to 500.
+
+        Returns:
+            pd.DataFrame: The dataframe with the predicted clusters and the noise as -1.
+        """
+
+        clustered_data = self.hdbscan_data.copy()
+        # Remove clusters with less than min_cluster_size samples
+        lbls = []
+        for label in self.hdbscan_data["labels"].unique():
+            cnt = len(self.hdbscan_data[self.hdbscan_data["labels"] == label])
+            if cnt > min_cluster_size:
+                lbls.append(label)
+
+        # Replace all labels that aren't in lbls with -1
+        clustered_data.loc[~clustered_data["labels"].isin(lbls), "labels"] = -1
+
+        # Reset the modes to start from -1
         codes, uniques = pd.factorize(clustered_data["labels"])
         clustered_data["labels"] = codes
         return clustered_data
